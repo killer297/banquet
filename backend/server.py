@@ -16,14 +16,6 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Respons
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
-
-from fastapi import FastAPI
- 
-app = FastAPI()
- 
-@app.get("/")
-def read_root():
-    return {"Python": "on Vercel"}
     
 # ---- Setup ----
 mongo_url = os.environ['MONGO_URL']
