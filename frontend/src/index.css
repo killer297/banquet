@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: #090D16;
+    color: #F9FAFB;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.02em;
+}
+
+.font-mono, .tabular {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+    :root {
+        --background: 222 33% 6%;
+        --foreground: 210 20% 98%;
+        --card: 222 30% 9%;
+        --card-foreground: 210 20% 98%;
+        --popover: 222 30% 10%;
+        --popover-foreground: 210 20% 98%;
+        --primary: 45 62% 53%;
+        --primary-foreground: 0 0% 5%;
+        --secondary: 217 28% 13%;
+        --secondary-foreground: 210 20% 98%;
+        --muted: 217 25% 14%;
+        --muted-foreground: 217 10% 65%;
+        --accent: 217 28% 16%;
+        --accent-foreground: 210 20% 98%;
+        --destructive: 350 89% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 217 20% 20%;
+        --input: 217 20% 18%;
+        --ring: 45 62% 53%;
+        --chart-1: 45 62% 53%;
+        --chart-2: 158 64% 40%;
+        --chart-3: 217 91% 60%;
+        --chart-4: 38 92% 50%;
+        --chart-5: 350 89% 60%;
+        --radius: 0.75rem;
+    }
+}
+
+@layer base {
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Print for invoice */
+@media print {
+    body * { visibility: hidden; }
+    .print-area, .print-area * { visibility: visible; }
+    .print-area { position: absolute; left: 0; top: 0; width: 100%; color: black; background: white; }
+    .no-print { display: none !important; }
+}
+
+.gold-gradient-text {
+    background: linear-gradient(135deg, #F4E4A1 0%, #D4AF37 60%, #A67C00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.card-elev {
+    background: linear-gradient(180deg, rgba(31,41,55,0.6) 0%, rgba(17,24,39,0.9) 100%);
+    border: 1px solid rgba(212,175,55,0.12);
+}
+
+.hover-lift {
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+    transform: translateY(-2px);
+    border-color: rgba(212,175,55,0.35);
+    box-shadow: 0 8px 24px -12px rgba(212,175,55,0.2);
+}
+
+@layer base {
+    [data-debug-wrapper="true"] { display: contents !important; }
+}
