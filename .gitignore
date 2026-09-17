@@ -85,3 +85,5 @@ android-sdk/
 **/.emergent/recordings/
 __pycache__/
 *.pyc
+__pycache__/
+*.pyc
