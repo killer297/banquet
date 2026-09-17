@@ -16,7 +16,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Respons
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
-
+    
 # ---- Setup ----
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
