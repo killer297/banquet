@@ -18,7 +18,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
     
 # ---- Setup ----
-mongo_url = os.environ['MONGO_URL']
+mongo_url = os.environ['mongodb+srv://ankursharmaankursharma123_db_user:F2OxtIyyhHjEGUXw@cluster0.pu5gj2a.mongodb.net']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
