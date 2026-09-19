@@ -18,7 +18,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
     
 # ---- Setup ----
-mongo_url = os.getenv("mongodb+srv://ankursharmaankursharma123_db_user:F2OxtIyyhHjEGUXw@cluster0.xxxxx.mongodb.net/banquet_bms")
+MONGO_URL = os.getenv("mongodb+srv://ankursharmaankursharma123_db_user:F2OxtIyyhHjEGUXw@cluster0.xxxxx.mongodb.net/banquet_bms")
 if not MONGO_URL:
     raise RuntimeError("MONGO_URL environment variable is not set")
 
