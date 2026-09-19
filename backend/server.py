@@ -19,6 +19,12 @@ from pydantic import BaseModel, Field, EmailStr
     
 # ---- Setup ----
 mongo_url = os.getenv("mongodb+srv://ankursharmaankursharma123_db_user:F2OxtIyyhHjEGUXw@cluster0.xxxxx.mongodb.net/banquet_bms")
+if not MONGO_URL:
+    raise RuntimeError("MONGO_URL environment variable is not set")
+
+client = AsyncIOMotorClient(MONGO_URL)
+
+db = client["your_database_name"]
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
