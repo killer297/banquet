@@ -1,43 +1,55 @@
 from dotenv import load_dotenv
 from pathlib import Path
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
 import os
 import uuid
 import logging
 import secrets
-from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta, date, time as dtime
 from typing import List, Optional, Any, Dict
 
-import certifi
 import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, Query
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
+    
+# ---- Setup ----
+# ---- Environment / MongoDB ----
+# Render provides these values from its Environment Variables section.
+# IMPORTANT: MONGO_URL must contain ONLY the mongodb+srv://... value,
+# not a second "MONGO_URL=" prefix.
+mongo_url = os.getenv("MONGO_URL", "").strip()
+if not mongo_url:
+    raise RuntimeError("MONGO_URL environment variable is not set")
 
-# Load local .env if present (ignored on production/Render)
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+# Recover gracefully if someone accidentally pasted MONGO_URL=... into the value.
+while mongo_url.startswith("MONGO_URL="):
+    mongo_url = mongo_url[len("MONGO_URL="):].strip()
 
-# ---- Environment Variables & Fallbacks ----
-RAW_MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://ankursharmaankursharma123_db_user:F2OxtIyyhHjEGUXw@cluster0.xxxxx.mongodb.net/banquet_bms")
-# Fix potential string duplication if MONGO_URL="MONGO_URL=..."
-if RAW_MONGO_URL.startswith("MONGO_URL="):
-    mongo_url = RAW_MONGO_URL.replace("MONGO_URL=", "", 1).strip()
-else:
-    mongo_url = RAW_MONGO_URL.strip()
+db_name = os.getenv("DB_NAME", "banquet_bms").strip()
+if not db_name:
+    db_name = "banquet_bms"
 
-DB_NAME = os.getenv("DB_NAME", "banquet_bms")
-JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-jwt-key-change-this-in-render-env")
+client = AsyncIOMotorClient(
+    mongo_url,
+    serverSelectionTimeoutMS=10000,
+    connectTimeoutMS=10000,
+    socketTimeoutMS=20000,
+    retryWrites=True,
+)
+db = client[db_name]
+
 JWT_ALGORITHM = "HS256"
+JWT_SECRET = os.getenv("JWT_SECRET", "").strip()
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET environment variable is not set")
 
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ankur@example.com").lower()
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "AdminPass123!")
-
-# ---- MongoDB Setup ----
-client = AsyncIOMotorClient(mongo_url, tlsCAFile=certifi.where())
-db = client[DB_NAME]
+app = FastAPI(title="Banquet Management System")
+api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("bms")
@@ -248,163 +260,6 @@ async def gen_invoice_number() -> str:
     count = await db.invoices.count_documents({})
     return f"INV-{year}-{count + 1001}"
 
-# ---- Seed Data Setup ----
-DEMO_HALLS = [
-    {"name": "Grand Imperial Ballroom", "code": "GIB", "capacity": 1200, "location": "Ground Floor",
-     "description": "Signature ballroom for weddings & galas.", "base_price": 150000, "hourly_price": 15000,
-     "status": "available",
-     "facilities": ["AC", "Stage", "Sound System", "LED Wall", "Parking", "Catering"],
-     "image": "https://images.unsplash.com/photo-1780593116478-c46838f86523?crop=entropy&cs=srgb&fm=jpg&q=85"},
-    {"name": "Crystal Chandelier Hall", "code": "CCH", "capacity": 500, "location": "Level 1",
-     "description": "Elegant mid-size hall with crystal chandeliers.", "base_price": 85000, "hourly_price": 9000,
-     "status": "available",
-     "facilities": ["AC", "Sound System", "Buffet Counter", "Parking"],
-     "image": "https://images.unsplash.com/photo-1768851142332-75f3d1b47452?crop=entropy&cs=srgb&fm=jpg&q=85"},
-    {"name": "Royal Pavilion Courtyard", "code": "RPC", "capacity": 800, "location": "Outdoor",
-     "description": "Open-air pavilion with weather-proof marquee.", "base_price": 110000, "hourly_price": 12000,
-     "status": "available",
-     "facilities": ["Stage", "Sound System", "Parking", "Decoration", "Catering"],
-     "image": "https://images.unsplash.com/photo-1780542900375-0cf459e38fbb?crop=entropy&cs=srgb&fm=jpg&q=85"},
-    {"name": "Emerald Executive Suite", "code": "EES", "capacity": 200, "location": "Level 2",
-     "description": "Corporate conference suite with 4K projector.", "base_price": 45000, "hourly_price": 5000,
-     "status": "available",
-     "facilities": ["AC", "Projector", "Wi-Fi", "Podium", "Coffee Setup"],
-     "image": "https://images.unsplash.com/photo-1768508951405-10e83c4a2872?crop=entropy&cs=srgb&fm=jpg&q=85"},
-]
-
-DEMO_PACKAGES = [
-    {"name": "Royal Punjabi Wedding Feast", "description": "Multi-course wedding menu with live counters.",
-     "price": 1450, "per_plate": True, "services": ["Welcome Drinks", "Starters", "Main Course", "Desserts", "Stage Decor"],
-     "tax_percent": 18, "discount_percent": 0, "status": "active"},
-    {"name": "Platinum Corporate Gala", "description": "Premium corporate banquet package.",
-     "price": 1850, "per_plate": True, "services": ["High Tea", "Buffet Lunch", "AV Setup", "Photography"],
-     "tax_percent": 18, "discount_percent": 0, "status": "active"},
-    {"name": "Pearl Social & Birthday", "description": "Fun social celebration package.",
-     "price": 950, "per_plate": True, "services": ["Snacks", "Cake Cutting", "DJ", "Basic Decor"],
-     "tax_percent": 18, "discount_percent": 0, "status": "active"},
-    {"name": "Silver Cocktail Reception", "description": "Elegant cocktail evening.",
-     "price": 1200, "per_plate": True, "services": ["Cocktails", "Live Music", "Canapés", "Ambient Lights"],
-     "tax_percent": 18, "discount_percent": 0, "status": "active"},
-]
-
-async def seed():
-    await db.users.create_index("email", unique=True)
-    await db.bookings.create_index("booking_number", unique=True)
-    await db.bookings.create_index([("hall_id", 1), ("event_date", 1)])
-    await db.customers.create_index("phone")
-
-    pw_hash = hash_password(ADMIN_PASSWORD)
-
-    seed_users = [
-        {"name": "Ankur Sharma", "email": ADMIN_EMAIL, "role": "super_admin", "phone": "+91-98765-00001"},
-        {"name": "Priya Manager", "email": "manager@bms.com", "role": "manager", "phone": "+91-98765-00002"},
-        {"name": "Rohan Staff", "email": "staff@bms.com", "role": "booking_staff", "phone": "+91-98765-00003"},
-        {"name": "Anita Accountant", "email": "accountant@bms.com", "role": "accountant", "phone": "+91-98765-00004"},
-    ]
-    for u in seed_users:
-        existing = await db.users.find_one({"email": u["email"]})
-        if not existing:
-            await db.users.insert_one({"id": new_id(), **u,
-                                        "password_hash": pw_hash, "created_at": now_utc()})
-        else:
-            await db.users.update_one({"email": u["email"]},
-                {"$set": {"password_hash": pw_hash, "role": u["role"], "name": u["name"]}})
-
-    if await db.halls.count_documents({}) == 0:
-        for h in DEMO_HALLS:
-            await db.halls.insert_one({"id": new_id(), **h, "created_at": now_utc()})
-
-    if await db.packages.count_documents({}) == 0:
-        for p in DEMO_PACKAGES:
-            await db.packages.insert_one({"id": new_id(), **p, "created_at": now_utc()})
-
-    if await db.bookings.count_documents({}) == 0:
-        halls = await db.halls.find({}, {"_id": 0}).to_list(10)
-        packages = await db.packages.find({}, {"_id": 0}).to_list(10)
-        demo_customers = [
-            {"name": "Aditya & Meera", "phone": "+91-99000-11111", "email": "aditya@example.com",
-             "address": "1 Prestige Ave", "city": "Mumbai", "gst_number": "", "notes": "Prefers pure veg"},
-            {"name": "Vikram Enterprises", "phone": "+91-99000-22222", "email": "vikram.corp@example.com",
-             "address": "12 Corporate Park", "city": "Bengaluru", "gst_number": "29ABCDE1234F1Z5", "notes": ""},
-            {"name": "Riya Kapoor", "phone": "+91-99000-33333", "email": "riya@example.com",
-             "address": "7 Rose Villa", "city": "Delhi", "gst_number": "", "notes": "Birthday events"},
-            {"name": "TechNova Ltd", "phone": "+91-99000-44444", "email": "events@technova.com",
-             "address": "Tower B, IT Park", "city": "Pune", "gst_number": "27ABCDE9999F2Z8", "notes": ""},
-            {"name": "Nikhil & Family", "phone": "+91-99000-55555", "email": "nikhil@example.com",
-             "address": "88 Green Meadows", "city": "Hyderabad", "gst_number": "", "notes": ""},
-        ]
-        cust_ids = []
-        for c in demo_customers:
-            cid = new_id()
-            cust_ids.append(cid)
-            await db.customers.insert_one({"id": cid, **c, "created_at": now_utc(), "created_by": "seed"})
-
-        today = date.today()
-        sample = [
-            (0, halls[0], packages[0], cust_ids[0], "Wedding", "Aditya × Meera Wedding", "10:00", "23:00", 700, "confirmed", 700000, 300000, 60000, 20000),
-            (2, halls[1], packages[1], cust_ids[1], "Corporate Meeting", "Vikram AGM 2026", "09:00", "17:00", 350, "confirmed", 350000, 200000, 20000, 0),
-            (5, halls[2], packages[2], cust_ids[2], "Birthday", "Riya's 25th Birthday", "18:00", "23:00", 200, "pending", 200000, 100000, 15000, 10000),
-            (7, halls[3], packages[1], cust_ids[3], "Conference", "TechNova Product Launch", "10:00", "16:00", 150, "confirmed", 150000, 80000, 10000, 0),
-            (10, halls[0], packages[0], cust_ids[4], "Reception", "Nikhil Reception Night", "19:00", "23:59", 900, "hold", 900000, 400000, 80000, 30000),
-            (-5, halls[1], packages[3], cust_ids[0], "Anniversary", "Anniversary Cocktails", "19:00", "22:00", 120, "completed", 100000, 60000, 5000, 0),
-            (-15, halls[2], packages[0], cust_ids[2], "Engagement", "Engagement Ceremony", "17:00", "22:00", 300, "completed", 300000, 150000, 25000, 5000),
-            (15, halls[0], packages[0], cust_ids[4], "Wedding", "Sangeet Night", "18:00", "23:00", 500, "confirmed", 500000, 250000, 45000, 15000),
-        ]
-        for offset, hall, pkg, cid, etype, ename, st, et, guests, status, hall_c, pkg_c, dec_c, extra in sample:
-            event_date = (today + timedelta(days=offset)).isoformat()
-            data = {"customer_id": cid, "hall_id": hall["id"], "event_type": etype,
-                    "event_name": ename, "event_date": event_date, "start_time": st,
-                    "end_time": et, "guest_count": guests, "package_id": pkg["id"],
-                    "seating": "Round Tables", "special_requirements": "",
-                    "hall_charges": hall_c, "package_charges": pkg_c, "food_charges": 0,
-                    "decoration_charges": dec_c, "additional_charges": extra,
-                    "discount": 0, "tax_percent": 18, "status": status, "notes": ""}
-            totals = compute_totals(data)
-            paid = totals["total_amount"] * (0.5 if status in ("confirmed", "hold") else (1.0 if status == "completed" else 0.3))
-            paid = round(paid, 2)
-            bid = new_id()
-            bnum = f"BK-{today.year}-{1001 + await db.bookings.count_documents({})}"
-            await db.bookings.insert_one({**data, **totals, "id": bid, "booking_number": bnum,
-                                           "paid_amount": paid, "due_amount": totals["total_amount"] - paid,
-                                           "created_by": "seed", "created_by_name": "System",
-                                           "created_at": now_utc(), "updated_at": now_utc()})
-            if paid > 0:
-                await db.payments.insert_one({"id": new_id(),
-                    "payment_number": f"PAY-{1001 + await db.payments.count_documents({})}",
-                    "booking_id": bid, "amount": paid, "payment_date": event_date,
-                    "method": "upi", "transaction_id": f"TXN{secrets.token_hex(4)}",
-                    "notes": "Advance", "created_by": "seed", "created_at": now_utc()})
-
-        exp_categories = [
-            ("Catering", "Bulk grocery purchase", 45000, "Sharma Traders"),
-            ("Decoration", "Floral arrangements", 22000, "Bloom Studio"),
-            ("Staff", "Event staff wages Feb", 68000, "Payroll"),
-            ("Electricity", "Utility bill", 18500, "MSEB"),
-            ("Marketing", "Instagram ads", 12000, "Meta"),
-            ("Maintenance", "AC servicing", 8500, "CoolAir Services"),
-        ]
-        for cat, desc, amt, vendor in exp_categories:
-            await db.expenses.insert_one({"id": new_id(),
-                "expense_number": f"EXP-{1001 + await db.expenses.count_documents({})}",
-                "date": (today - timedelta(days=secrets.randbelow(20))).isoformat(),
-                "category": cat, "description": desc, "amount": amt, "method": "bank",
-                "vendor": vendor, "notes": "", "created_by": "seed",
-                "created_by_name": "System", "created_at": now_utc()})
-
-    if not await db.settings.find_one({"id": "main"}):
-        await db.settings.insert_one({"id": "main", **SettingsIn().model_dump()})
-
-# ---- Lifespan Context Manager (replaces deprecated @app.on_event) ----
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await seed()
-    logger.info("BMS ready")
-    yield
-    client.close()
-
-app = FastAPI(title="Banquet Management System", lifespan=lifespan)
-api = APIRouter(prefix="/api")
-
 # ==================== AUTH ====================
 @api.post("/auth/login")
 async def login(body: LoginIn, response: Response):
@@ -491,6 +346,7 @@ async def list_customers(user=Depends(get_current_user), q: Optional[str] = None
                          {"phone": {"$regex": q, "$options": "i"}},
                          {"email": {"$regex": q, "$options": "i"}}]}
     customers = await db.customers.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    # enrich with stats
     for c in customers:
         bookings = await db.bookings.find({"customer_id": c["id"]}, {"_id": 0}).to_list(500)
         c["total_bookings"] = len(bookings)
@@ -597,6 +453,7 @@ async def calendar(start: Optional[str] = None, end: Optional[str] = None,
     if hall_id:
         q["hall_id"] = hall_id
     bookings = await db.bookings.find(q, {"_id": 0}).to_list(2000)
+    # attach customer & hall names
     for b in bookings:
         c = await db.customers.find_one({"id": b.get("customer_id")}, {"name": 1, "_id": 0})
         h = await db.halls.find_one({"id": b.get("hall_id")}, {"name": 1, "_id": 0})
@@ -788,6 +645,7 @@ async def dashboard(user=Depends(get_current_user)):
     status_counts: Dict[str, int] = {}
     for b in bookings:
         status_counts[b["status"]] = status_counts.get(b["status"], 0) + 1
+    # month buckets last 6
     from collections import defaultdict
     months = defaultdict(lambda: {"revenue": 0, "bookings": 0, "expenses": 0})
     for b in bookings:
@@ -798,6 +656,7 @@ async def dashboard(user=Depends(get_current_user)):
         m = e["date"][:7]
         months[m]["expenses"] += e.get("amount", 0)
     monthly = [{"month": k, **v} for k, v in sorted(months.items())][-6:]
+    # hall performance
     halls = await db.halls.find({}, {"_id": 0}).to_list(200)
     hall_perf = []
     for h in halls:
@@ -843,13 +702,16 @@ async def report_summary(start: Optional[str] = None, end: Optional[str] = None,
     tax_collected = sum(b.get("tax", 0) for b in bookings if b["status"] != "cancelled")
     discounts = sum(b.get("discount", 0) for b in bookings if b["status"] != "cancelled")
     total_exp = sum(e.get("amount", 0) for e in expenses)
+    # by category
     exp_by_cat = {}
     for e in expenses:
         exp_by_cat[e["category"]] = exp_by_cat.get(e["category"], 0) + e["amount"]
+    # by event type
     event_types = {}
     for b in bookings:
         if b["status"] == "cancelled": continue
         event_types[b["event_type"]] = event_types.get(b["event_type"], 0) + 1
+    # halls
     halls = await db.halls.find({}, {"_id": 0}).to_list(200)
     hall_rev = []
     for h in halls:
@@ -901,15 +763,209 @@ async def update_settings(body: SettingsIn, user=Depends(require_roles("super_ad
     await audit(user, "update", "settings", "main")
     return {"ok": True}
 
-# Include API Router
+@app.get("/health")
+async def health():
+    try:
+        await client.admin.command("ping")
+        return {"status": "ok", "database": db_name}
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
 app.include_router(api)
 
-# ---- CORS Policy Setup ----
-# If connecting from a frontend domain on Render or Vercel, pass origin directly or allow headers cleanly.
+# ---- CORS ----
+# Set ALLOWED_ORIGINS on Render to the exact frontend origin(s), comma-separated.
+# Example:
+# ALLOWED_ORIGINS=https://your-frontend.onrender.com,https://yourdomain.com
+allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "").strip()
+allowed_origins = [
+    origin.strip().rstrip("/")
+    for origin in allowed_origins_raw.split(",")
+    if origin.strip()
+]
+
+# Keep local development convenient when ALLOWED_ORIGINS is not configured.
+if not allowed_origins:
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,  # Set to False when using wildcard '*' origins
+    allow_credentials=True,
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ==================== SEED ====================
+DEMO_HALLS = [
+    {"name": "Grand Imperial Ballroom", "code": "GIB", "capacity": 1200, "location": "Ground Floor",
+     "description": "Signature ballroom for weddings & galas.", "base_price": 150000, "hourly_price": 15000,
+     "status": "available",
+     "facilities": ["AC", "Stage", "Sound System", "LED Wall", "Parking", "Catering"],
+     "image": "https://images.unsplash.com/photo-1780593116478-c46838f86523?crop=entropy&cs=srgb&fm=jpg&q=85"},
+    {"name": "Crystal Chandelier Hall", "code": "CCH", "capacity": 500, "location": "Level 1",
+     "description": "Elegant mid-size hall with crystal chandeliers.", "base_price": 85000, "hourly_price": 9000,
+     "status": "available",
+     "facilities": ["AC", "Sound System", "Buffet Counter", "Parking"],
+     "image": "https://images.unsplash.com/photo-1768851142332-75f3d1b47452?crop=entropy&cs=srgb&fm=jpg&q=85"},
+    {"name": "Royal Pavilion Courtyard", "code": "RPC", "capacity": 800, "location": "Outdoor",
+     "description": "Open-air pavilion with weather-proof marquee.", "base_price": 110000, "hourly_price": 12000,
+     "status": "available",
+     "facilities": ["Stage", "Sound System", "Parking", "Decoration", "Catering"],
+     "image": "https://images.unsplash.com/photo-1780542900375-0cf459e38fbb?crop=entropy&cs=srgb&fm=jpg&q=85"},
+    {"name": "Emerald Executive Suite", "code": "EES", "capacity": 200, "location": "Level 2",
+     "description": "Corporate conference suite with 4K projector.", "base_price": 45000, "hourly_price": 5000,
+     "status": "available",
+     "facilities": ["AC", "Projector", "Wi-Fi", "Podium", "Coffee Setup"],
+     "image": "https://images.unsplash.com/photo-1768508951405-10e83c4a2872?crop=entropy&cs=srgb&fm=jpg&q=85"},
+]
+
+DEMO_PACKAGES = [
+    {"name": "Royal Punjabi Wedding Feast", "description": "Multi-course wedding menu with live counters.",
+     "price": 1450, "per_plate": True, "services": ["Welcome Drinks", "Starters", "Main Course", "Desserts", "Stage Decor"],
+     "tax_percent": 18, "discount_percent": 0, "status": "active"},
+    {"name": "Platinum Corporate Gala", "description": "Premium corporate banquet package.",
+     "price": 1850, "per_plate": True, "services": ["High Tea", "Buffet Lunch", "AV Setup", "Photography"],
+     "tax_percent": 18, "discount_percent": 0, "status": "active"},
+    {"name": "Pearl Social & Birthday", "description": "Fun social celebration package.",
+     "price": 950, "per_plate": True, "services": ["Snacks", "Cake Cutting", "DJ", "Basic Decor"],
+     "tax_percent": 18, "discount_percent": 0, "status": "active"},
+    {"name": "Silver Cocktail Reception", "description": "Elegant cocktail evening.",
+     "price": 1200, "per_plate": True, "services": ["Cocktails", "Live Music", "Canapés", "Ambient Lights"],
+     "tax_percent": 18, "discount_percent": 0, "status": "active"},
+]
+
+async def seed():
+    # indexes
+    await db.users.create_index("email", unique=True)
+    await db.bookings.create_index("booking_number", unique=True)
+    await db.bookings.create_index([("hall_id", 1), ("event_date", 1)])
+    await db.customers.create_index("phone")
+
+    admin_email = os.environ["ADMIN_EMAIL"].lower()
+    admin_pw = os.environ["ADMIN_PASSWORD"]
+    pw_hash = hash_password(admin_pw)
+
+    seed_users = [
+        {"name": "Ankur Sharma", "email": admin_email, "role": "super_admin", "phone": "+91-98765-00001"},
+        {"name": "Priya Manager", "email": "manager@bms.com", "role": "manager", "phone": "+91-98765-00002"},
+        {"name": "Rohan Staff", "email": "staff@bms.com", "role": "booking_staff", "phone": "+91-98765-00003"},
+        {"name": "Anita Accountant", "email": "accountant@bms.com", "role": "accountant", "phone": "+91-98765-00004"},
+    ]
+    for u in seed_users:
+        existing = await db.users.find_one({"email": u["email"]})
+        if not existing:
+            await db.users.insert_one({"id": new_id(), **u,
+                                        "password_hash": pw_hash, "created_at": now_utc()})
+        else:
+            await db.users.update_one({"email": u["email"]},
+                {"$set": {"password_hash": pw_hash, "role": u["role"], "name": u["name"]}})
+
+    # Halls
+    if await db.halls.count_documents({}) == 0:
+        for h in DEMO_HALLS:
+            await db.halls.insert_one({"id": new_id(), **h, "created_at": now_utc()})
+
+    # Packages
+    if await db.packages.count_documents({}) == 0:
+        for p in DEMO_PACKAGES:
+            await db.packages.insert_one({"id": new_id(), **p, "created_at": now_utc()})
+
+    # Customers + Bookings + Payments + Expenses
+    if await db.bookings.count_documents({}) == 0:
+        halls = await db.halls.find({}, {"_id": 0}).to_list(10)
+        packages = await db.packages.find({}, {"_id": 0}).to_list(10)
+        demo_customers = [
+            {"name": "Aditya & Meera", "phone": "+91-99000-11111", "email": "aditya@example.com",
+             "address": "1 Prestige Ave", "city": "Mumbai", "gst_number": "", "notes": "Prefers pure veg"},
+            {"name": "Vikram Enterprises", "phone": "+91-99000-22222", "email": "vikram.corp@example.com",
+             "address": "12 Corporate Park", "city": "Bengaluru", "gst_number": "29ABCDE1234F1Z5", "notes": ""},
+            {"name": "Riya Kapoor", "phone": "+91-99000-33333", "email": "riya@example.com",
+             "address": "7 Rose Villa", "city": "Delhi", "gst_number": "", "notes": "Birthday events"},
+            {"name": "TechNova Ltd", "phone": "+91-99000-44444", "email": "events@technova.com",
+             "address": "Tower B, IT Park", "city": "Pune", "gst_number": "27ABCDE9999F2Z8", "notes": ""},
+            {"name": "Nikhil & Family", "phone": "+91-99000-55555", "email": "nikhil@example.com",
+             "address": "88 Green Meadows", "city": "Hyderabad", "gst_number": "", "notes": ""},
+        ]
+        cust_ids = []
+        for c in demo_customers:
+            cid = new_id()
+            cust_ids.append(cid)
+            await db.customers.insert_one({"id": cid, **c, "created_at": now_utc(), "created_by": "seed"})
+
+        today = date.today()
+        sample = [
+            (0, halls[0], packages[0], cust_ids[0], "Wedding", "Aditya × Meera Wedding", "10:00", "23:00", 700, "confirmed", 700000, 300000, 60000, 20000),
+            (2, halls[1], packages[1], cust_ids[1], "Corporate Meeting", "Vikram AGM 2026", "09:00", "17:00", 350, "confirmed", 350000, 200000, 20000, 0),
+            (5, halls[2], packages[2], cust_ids[2], "Birthday", "Riya's 25th Birthday", "18:00", "23:00", 200, "pending", 200000, 100000, 15000, 10000),
+            (7, halls[3], packages[1], cust_ids[3], "Conference", "TechNova Product Launch", "10:00", "16:00", 150, "confirmed", 150000, 80000, 10000, 0),
+            (10, halls[0], packages[0], cust_ids[4], "Reception", "Nikhil Reception Night", "19:00", "23:59", 900, "hold", 900000, 400000, 80000, 30000),
+            (-5, halls[1], packages[3], cust_ids[0], "Anniversary", "Anniversary Cocktails", "19:00", "22:00", 120, "completed", 100000, 60000, 5000, 0),
+            (-15, halls[2], packages[0], cust_ids[2], "Engagement", "Engagement Ceremony", "17:00", "22:00", 300, "completed", 300000, 150000, 25000, 5000),
+            (15, halls[0], packages[0], cust_ids[4], "Wedding", "Sangeet Night", "18:00", "23:00", 500, "confirmed", 500000, 250000, 45000, 15000),
+        ]
+        for offset, hall, pkg, cid, etype, ename, st, et, guests, status, hall_c, pkg_c, dec_c, extra in sample:
+            event_date = (today + timedelta(days=offset)).isoformat()
+            data = {"customer_id": cid, "hall_id": hall["id"], "event_type": etype,
+                    "event_name": ename, "event_date": event_date, "start_time": st,
+                    "end_time": et, "guest_count": guests, "package_id": pkg["id"],
+                    "seating": "Round Tables", "special_requirements": "",
+                    "hall_charges": hall_c, "package_charges": pkg_c, "food_charges": 0,
+                    "decoration_charges": dec_c, "additional_charges": extra,
+                    "discount": 0, "tax_percent": 18, "status": status, "notes": ""}
+            totals = compute_totals(data)
+            paid = totals["total_amount"] * (0.5 if status in ("confirmed", "hold") else (1.0 if status == "completed" else 0.3))
+            paid = round(paid, 2)
+            bid = new_id()
+            bnum = f"BK-{today.year}-{1001 + await db.bookings.count_documents({})}"
+            await db.bookings.insert_one({**data, **totals, "id": bid, "booking_number": bnum,
+                                           "paid_amount": paid, "due_amount": totals["total_amount"] - paid,
+                                           "created_by": "seed", "created_by_name": "System",
+                                           "created_at": now_utc(), "updated_at": now_utc()})
+            if paid > 0:
+                await db.payments.insert_one({"id": new_id(),
+                    "payment_number": f"PAY-{1001 + await db.payments.count_documents({})}",
+                    "booking_id": bid, "amount": paid, "payment_date": event_date,
+                    "method": "upi", "transaction_id": f"TXN{secrets.token_hex(4)}",
+                    "notes": "Advance", "created_by": "seed", "created_at": now_utc()})
+
+        exp_categories = [
+            ("Catering", "Bulk grocery purchase", 45000, "Sharma Traders"),
+            ("Decoration", "Floral arrangements", 22000, "Bloom Studio"),
+            ("Staff", "Event staff wages Feb", 68000, "Payroll"),
+            ("Electricity", "Utility bill", 18500, "MSEB"),
+            ("Marketing", "Instagram ads", 12000, "Meta"),
+            ("Maintenance", "AC servicing", 8500, "CoolAir Services"),
+        ]
+        for cat, desc, amt, vendor in exp_categories:
+            await db.expenses.insert_one({"id": new_id(),
+                "expense_number": f"EXP-{1001 + await db.expenses.count_documents({})}",
+                "date": (today - timedelta(days=secrets.randbelow(20))).isoformat(),
+                "category": cat, "description": desc, "amount": amt, "method": "bank",
+                "vendor": vendor, "notes": "", "created_by": "seed",
+                "created_by_name": "System", "created_at": now_utc()})
+
+    # settings default
+    if not await db.settings.find_one({"id": "main"}):
+        await db.settings.insert_one({"id": "main", **SettingsIn().model_dump()})
+
+@app.on_event("startup")
+async def _startup():
+    try:
+        await client.admin.command("ping")
+        logger.info("MongoDB connection successful: database=%s", db_name)
+    except Exception:
+        logger.exception("MongoDB connection failed")
+        raise
+
+    await seed()
+    logger.info("BMS ready")
+
+@app.on_event("shutdown")
+async def _shutdown():
+    client.close()
