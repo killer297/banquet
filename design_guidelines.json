@@ -1,0 +1,233 @@
+{
+  "project_name": "GrandImperia Banquet Management System (BMS)",
+  "app_type": "saas_app / dashboard",
+  "theme": "Luxurious Dark & Light Adaptive (Default: Deep Midnight Slate #0F172A with Champagne Gold #D4AF37 & Royal Emerald #10B981 accents)",
+  "currency": "INR (₹)",
+  "persona": "E1 Anti-AI Designer - High-Density Precision Luxury",
+  "design_principles": [
+    "Fusion over Imitation: Swiss grid structure meets high-end luxury hospitality aesthetics (Champagne Gold, Rich Slate, Velvet Crimson accent touches).",
+    "Emotion First: High-status operational authority. Every metric and booking block feels tactile and commanding.",
+    "Content is King: Dynamic real-time timeline, instant visual conflict warnings, clear INR (₹) financial breakdowns, high-density data matrices.",
+    "Contrast & Hierarchy: Strict APCA contrast standards, zero muddy text, vivid status tags for instant scanability."
+  ],
+  "typography": {
+    "heading_font": "Outfit, Clash Display, sans-serif",
+    "body_font": "Plus Jakarta Sans, Inter, sans-serif",
+    "mono_font": "JetBrains Mono, monospace",
+    "font_pairings": "Outfit for strong commanding headers + Plus Jakarta Sans for dense, high-readability table and timeline text",
+    "sizes": {
+      "h1": "text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-semibold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "h4": "text-lg font-medium",
+      "body": "text-sm sm:text-base leading-relaxed",
+      "caption": "text-xs font-medium uppercase tracking-wider text-muted-foreground"
+    },
+    "rules": [
+      "DO NOT use Inter or Arial for Main Headings; use Outfit or Clash Display.",
+      "Headings over 32px MUST use tracking-tight.",
+      "All numeric financial figures (₹) and dates MUST use tabular numbers or JetBrains Mono for exact column alignment."
+    ]
+  },
+  "colors": {
+    "archetype": "LUXURY & PERFORMANCE PRO (Deep Midnight Slate + Champagne Gold + Royal Emerald)",
+    "palette": {
+      "background": "#090D16",
+      "surface": "#111827",
+      "surface_elevated": "#1F2937",
+      "border": "#374151",
+      "primary": "#D4AF37",
+      "primary_hover": "#C5A059",
+      "primary_foreground": "#000000",
+      "secondary": "#1E293B",
+      "accent_emerald": "#10B981",
+      "accent_amber": "#F59E0B",
+      "accent_rose": "#F43F5E",
+      "accent_indigo": "#6366F1",
+      "text_primary": "#F9FAFB",
+      "text_secondary": "#9CA3AF",
+      "text_muted": "#6B7280"
+    },
+    "forbidden_colors": [
+      "#7351B7",
+      "#1B93A4"
+    ],
+    "status_colors": {
+      "confirmed": "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+      "tentative": "bg-amber-500/10 text-amber-400 border-amber-500/30",
+      "inquiry": "bg-sky-500/10 text-sky-400 border-sky-500/30",
+      "completed": "bg-indigo-500/10 text-indigo-400 border-indigo-500/30",
+      "cancelled": "bg-rose-500/10 text-rose-400 border-rose-500/30",
+      "conflict_alert": "bg-rose-600/20 text-rose-300 border-rose-500 animate-pulse"
+    }
+  },
+  "layout_and_spacing": {
+    "structure": "Sidebar + Fixed Top Nav + Main Scrollable Canvas",
+    "sidebar_width": "w-64 flex-shrink-0 border-r border-border bg-card",
+    "topnav_height": "h-16 flex items-center px-6 justify-between border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-40",
+    "grid_system": "MODE B: High Density Grid (12-column layout for analytics and timeline dashboard)",
+    "container_padding": "p-4 sm:p-6 lg:p-8 space-y-6",
+    "border_radius": "rounded-xl for cards, rounded-lg for buttons & inputs",
+    "rules": [
+      "Containers with borders MUST have internal padding (p-6 or p-8) to prevent text touch.",
+      "Ensure space between widgets is consistent (gap-4 or gap-6).",
+      "Grid children must be direct children. Avoid nesting motion div directly breaking grid spans."
+    ]
+  },
+  "components_and_modules": {
+    "auth_roles": {
+      "roles": ["Super Admin", "Venue Manager", "Booking Staff", "Accountant"],
+      "features": "Custom JWT auth simulation, role switcher in topbar, granular permission guards on sensitive actions (e.g., delete booking, override discount, view audit logs)."
+    },
+    "dashboard": {
+      "kpi_cards": [
+        "Monthly Revenue (₹ INR with growth % badge)",
+        "Hall Occupancy Rate (%)",
+        "Total Active Bookings (Inquiry vs Confirmed)",
+        "Pending Payments / Outstanding Balance (₹ INR)",
+        "Upcoming Events Today (Count & Quick Link)"
+      ],
+      "charts": [
+        "Revenue vs Expense Comparison (Recharts Area/Bar Chart)",
+        "Hall Performance Distribution (Recharts Pie/Donut Chart)",
+        "Monthly Event Category Breakdown (Wedding, Corporate, Social, Exhibition)"
+      ],
+      "widgets": [
+        "Live Conflict Alert Drawer / Banner",
+        "Real-time Recent Bookings Feed",
+        "Upcoming Hall Availability Matrix"
+      ]
+    },
+    "bookings": {
+      "features": [
+        "Interactive Booking Table with Search, Hall Filter, Date Range, Status Filter, and Pagination",
+        "Real-Time Conflict Detection Engine (checks Hall + Booking Date + Event Time Slot overlap)",
+        "Conflict Warning Modal & Banner with suggested alternative halls/slots",
+        "Booking Status Transition Workflow (Inquiry -> Tentative -> Confirmed -> In Progress -> Completed -> Cancelled)",
+        "New Booking Drawer / Dialog with guest count, catering package, decor add-ons, and payment advance calculation"
+      ]
+    },
+    "calendar_timeline": {
+      "views": ["Month Grid", "Week View", "Day View", "Hall-by-Hall Horizontal Timeline"],
+      "features": "Drag/click time slot to trigger new booking, color-coded by event status or hall, conflict highlight overlay."
+    },
+    "customers_crm": {
+      "features": [
+        "Customer Directory with VIP tags, total bookings, total spent (₹ INR)",
+        "Detailed Profile View (Contact Info, Event History, Notes, Preferences e.g. Pure Veg, Jain, Non-Veg, DJ License)",
+        "Direct CTA: Create Booking for Customer, Send Quote, Generate Statement"
+      ]
+    },
+    "banquet_halls": {
+      "halls": [
+        {
+          "name": "Grand Imperial Ballroom",
+          "capacity": "800 - 1200 Guests",
+          "rate": "₹1,50,000 / slot",
+          "facilities": ["AC", "Stage Lights", "Bridal Suite", "Valet Parking", "LED Wall"],
+          "image": "https://images.unsplash.com/photo-1780593116478-c46838f86523?crop=entropy&cs=srgb&fm=jpg&q=85"
+        },
+        {
+          "name": "Crystal Chandelier Hall",
+          "capacity": "300 - 500 Guests",
+          "rate": "₹85,000 / slot",
+          "facilities": ["AC", "Crystal Chandeliers", "In-house Audio", "Buffet Counters"],
+          "image": "https://images.unsplash.com/photo-1768851142332-75f3d1b47452?crop=entropy&cs=srgb&fm=jpg&q=85"
+        },
+        {
+          "name": "Royal Pavilion Courtyard",
+          "capacity": "500 - 800 Guests",
+          "rate": "₹1,10,000 / slot",
+          "facilities": ["Open Lawn", "Gazebo Stage", "Weather Proof Marquee", "Misty Coolers"],
+          "image": "https://images.unsplash.com/photo-1780542900375-0cf459e38fbb?crop=entropy&cs=srgb&fm=jpg&q=85"
+        },
+        {
+          "name": "Emerald Executive Conference Suite",
+          "capacity": "100 - 200 Guests",
+          "rate": "₹45,000 / slot",
+          "facilities": ["Projector 4K", "Podium", "High-speed Wi-Fi", "Conference Setup"],
+          "image": "https://images.unsplash.com/photo-1768508951405-10e83c4a2872?crop=entropy&cs=srgb&fm=jpg&q=85"
+        }
+      ],
+      "features": "Hall CRUD, amenity tags management, hourly/slot rate configuration, active/maintenance toggle."
+    },
+    "packages_services": {
+      "packages": [
+        "Royal Punjabi Wedding Feast (₹1,450 / plate)",
+        "Platinum Corporate Gala Banquet (₹1,850 / plate)",
+        "Pearl Social & Birthday Celebration (₹950 / plate)",
+        "Silver Cocktail & Reception Delight (₹1,200 / plate)"
+      ],
+      "add_ons": ["Floral Stage Backdrop", "DJ & Live Sound System", "Cold Pyro & Sparkler Entry", "Valet Parking Management", "Custom Photobooth"]
+    },
+    "pricing_billing_payments": {
+      "features": [
+        "Payment Ledger with Cash, UPI, Bank Transfer, Cheque, Credit Card options",
+        "Advance Payment receipt generation with balance due countdown",
+        "Payment status badges (Fully Paid, Partial Deposit, Pending, Overdue)"
+      ]
+    },
+    "invoices": {
+      "features": [
+        "Printable & PDF-exportable GST Invoice",
+        "Itemized breakdown (Hall rental, Plate cost x Guests, Service charge, SGST 9%, CGST 9%)",
+        "Official Stamp, Signature Line, and Payment Terms block"
+      ]
+    },
+    "expenses": {
+      "features": [
+        "Category breakdown (Catering Supplies, Floral Decorators, AV & Sound, Electricity/Utility, Staff Payroll)",
+        "Vendor tagging, date filter, receipt attachment simulator, impact on net profitability"
+      ]
+    },
+    "reports_analytics": {
+      "features": [
+        "Comprehensive financial matrix (Total Revenue - Total Expenses = Net Profit)",
+        "Hall-wise revenue contribution chart",
+        "Export reports as CSV or PDF report format"
+      ]
+    },
+    "notifications_audit_logs": {
+      "features": [
+        "Notification Center with unread counter, conflict warnings, payment reminders, booking updates",
+        "Audit Log Timeline tracking user actions (e.g., 'Manager modified Booking #BMS-104', 'Accountant recorded ₹50,000 payment')"
+      ]
+    },
+    "settings": {
+      "features": [
+        "Venue Identity (Name, Logo, GSTIN, Address, Phone)",
+        "Tax Rates Configuration (GST 18% default)",
+        "Role Permissions Matrix",
+        "Email/SMS Notification Templates"
+      ]
+    }
+  },
+  "media": {
+    "image_urls": {
+      "luxury_hall_1": "https://images.unsplash.com/photo-1780593116478-c46838f86523?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "luxury_hall_2": "https://images.unsplash.com/photo-1768851142332-75f3d1b47452?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "luxury_ballroom_3": "https://images.unsplash.com/photo-1780542900375-0cf459e38fbb?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "conference_suite_4": "https://images.unsplash.com/photo-1768508951405-10e83c4a2872?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "wedding_decor_stage": "https://images.unsplash.com/photo-1745573673583-a51f665ae48e?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "mandap_setup": "https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?crop=entropy&cs=srgb&fm=jpg&q=85"
+    }
+  },
+  "motion_and_microinteractions": {
+    "hover_effects": "Subtle border highlight transition, scale-[1.01] lift on cards, smooth background shifts on buttons.",
+    "transitions": "EXPLICIT properties only (e.g. transition: transform 0.2s ease, opacity 0.2s ease). NEVER use transition: all.",
+    "toasts": "Sonner library toast popups for conflict alerts, booking creations, payment logs, and error notices."
+  },
+  "accessibility_and_testing": {
+    "contrast": "APCA & WCAG 4.5:1 minimum compliance for all text. No gray-on-gray unreadable labels.",
+    "data_testids": "MANDATORY data-testid on all interactive buttons, inputs, navigation items, tables, modal action triggers, and KPI cards.",
+    "data_testid_convention": "kebab-case, role-based. Examples: data-testid=\"new-booking-button\", data-testid=\"search-input\", data-testid=\"hall-filter-select\", data-testid=\"conflict-warning-alert\""
+  },
+  "instructions_to_main_agent": [
+    "Build a complete, production-ready, highly aesthetic SaaS application for GrandImperia Banquet Management System.",
+    "Strictly follow the INR (₹) currency formatting for all monetary values.",
+    "Implement seed data with 4 roles (Super Admin, Manager, Booking Staff, Accountant), 4 sample halls, 4 packages, multiple realistic bookings with dates across current/upcoming months, payments, expenses, audit logs, and notifications.",
+    "Ensure real-time conflict detection triggers whenever user tries to book a hall on an already occupied slot date & time range.",
+    "Provide interactive modals/drawers for creating bookings, adding payments, viewing invoices (with print layout), adding expenses, and viewing customer history.",
+    "All components MUST include proper data-testid attributes for automated testing."
+  ]
+}
