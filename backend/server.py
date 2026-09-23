@@ -25,7 +25,7 @@ db = client[os.environ['DB_NAME']]
 JWT_ALGORITHM = "HS256"
 JWT_SECRET = os.environ["JWT_SECRET"]
 
-app = FastAPI(title="Banquet Management System")
+app = FastAPI()
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO)
